@@ -1,11 +1,13 @@
 use bevy::prelude::*;
 use rand::{thread_rng, Rng};
 
+const SPEED: f32 = 50.;
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, (add_websters, setup))
-        .add_systems(Update, move_websters)
+        .add_systems(Update, (move_websters, contain_websters.after(move_websters)))
         .run();
 }
 
@@ -21,27 +23,36 @@ fn add_websters(mut commands: Commands, assets: Res<AssetServer>) {
             SpriteBundle {
                 texture: calm,
                 transform: Transform {
-                    rotation: rand_angle,
-                    scale: Vec3::splat(0.5),
+                    scale: Vec3::splat(0.1),
                     ..default()
                 },
                 ..default()
             },
-            Webstenergy(thread_rng().gen::<f32>() * 4.)
+            Webstenergy(thread_rng().gen::<f32>() * 4. + 1.),
+            Direction(rand_angle * Vec3::Y)
         ));
     }
 }
 
-fn move_websters(mut query: Query<(&mut Transform, &Webstenergy)>, time: Res<Time>) {
-    for (mut transform, webstenergy) in query.iter_mut() {
-        let movement = transform.rotation.mul_vec3(Vec3::Y);
-        transform.translation += movement * webstenergy.0 * time.elapsed_seconds();
+fn move_websters(mut query: Query<(&mut Transform, &Webstenergy, &Direction)>, time: Res<Time>) {
+    for (mut transform, webstenergy, direction) in query.iter_mut() {
+        transform.translation += direction.0 * webstenergy.0 * time.delta_seconds() * SPEED;
+    }
+}
 
-        if transform.translation.x < -20. {
-            transform.rotation = Quat::from_rotation_arc(movement, movement * -Vec3::Y);
+fn contain_websters(mut query: Query<(&mut Direction, &Transform)>) {
+    for (mut direction, transform) in query.iter_mut() {
+        if !(-500.0..500.0).contains(&transform.translation.x) {
+            direction.x *= -1.;
+        }
+        if !(-500.0..500.0).contains(&transform.translation.y) {
+            direction.y *= -1.;
         }
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Deref, DerefMut)]
 struct Webstenergy(f32);
+
+#[derive(Component, Deref, DerefMut)]
+struct Direction(Vec3);
