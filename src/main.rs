@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, ecs::query::Has, sprite::collide_aabb::collide};
 use rand::{thread_rng, Rng};
 
 const SPEED: f32 = 50.;
@@ -47,6 +47,16 @@ fn contain_websters(mut query: Query<(&mut Direction, &Transform)>) {
         }
         if !(-500.0..500.0).contains(&transform.translation.y) {
             direction.y *= -1.;
+        }
+    }
+}
+
+fn collide_websters(mut commands: Commands, mut query: Query<(&Transform, Entity), Has<Direction>>) {
+    for (transform, entity) in &query {
+        for (other_transform, other_entity) in &query {
+            if collide(transform.translation, Vec2::new(25., 25.), transform.translation, Vec2::new(2., 25.)).is_some() {
+
+            }
         }
     }
 }
