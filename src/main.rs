@@ -1,4 +1,4 @@
-use bevy::{prelude::*, ecs::query::Has, sprite::collide_aabb::collide};
+use bevy::{ecs::query::Has, prelude::*, sprite::collide_aabb::collide};
 use rand::{thread_rng, Rng};
 
 const SPEED: f32 = 50.;
@@ -7,7 +7,15 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, (add_websters, setup))
-        .add_systems(Update, (move_websters, contain_websters.after(move_websters)))
+        .add_systems(
+            Update,
+            (
+                move_websters,
+                contain_websters.after(move_websters),
+                collide_websters,
+                resolve_collided.after(collide_websters),
+            ),
+        )
         .run();
 }
 
@@ -24,12 +32,13 @@ fn add_websters(mut commands: Commands, assets: Res<AssetServer>) {
                 texture: calm,
                 transform: Transform {
                     scale: Vec3::splat(0.1),
+                    translation: Vec3::new(thread_rng().gen_range(-450.0..450.0), thread_rng().gen_range(-450.0..450.0), 0.),
                     ..default()
                 },
                 ..default()
             },
             Webstenergy(thread_rng().gen::<f32>() * 4. + 1.),
-            Direction(rand_angle * Vec3::Y)
+            Direction(rand_angle * Vec3::Y),
         ));
     }
 }
@@ -51,13 +60,30 @@ fn contain_websters(mut query: Query<(&mut Direction, &Transform)>) {
     }
 }
 
-fn collide_websters(mut commands: Commands, mut query: Query<(&Transform, Entity), Has<Direction>>) {
+fn collide_websters(
+    mut commands: Commands,
+    query: Query<(&Transform, Entity), With<Webstenergy>>,
+) {
     for (transform, entity) in &query {
         for (other_transform, other_entity) in &query {
-            if collide(transform.translation, Vec2::new(25., 25.), transform.translation, Vec2::new(2., 25.)).is_some() {
-
+            if entity != other_entity && collide(
+                transform.translation,
+                Vec2::new(10., 10.),
+                other_transform.translation,
+                Vec2::new(10., 10.),
+            )
+            .is_some()
+            {
+                commands.entity(entity).insert(JustCollided);
+                commands.entity(other_entity).insert(JustCollided);
             }
         }
+    }
+}
+
+fn resolve_collided(mut commands: Commands, query: Query<Entity, With<JustCollided>>) {
+    for entity in &query {
+        commands.entity(entity).despawn();
     }
 }
 
@@ -66,3 +92,6 @@ struct Webstenergy(f32);
 
 #[derive(Component, Deref, DerefMut)]
 struct Direction(Vec3);
+
+#[derive(Component)]
+struct JustCollided;
