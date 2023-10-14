@@ -1,4 +1,6 @@
 use bevy::{prelude::*, sprite::collide_aabb::collide};
+use bevy_egui::{egui, EguiContexts, EguiPlugin};
+use egui_plot::{Line, Plot};
 use rand::{thread_rng, Rng};
 
 const SPEED: f32 = 50.;
@@ -6,7 +8,16 @@ const SPEED: f32 = 50.;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_systems(Startup, (load_webstimages, add_websters.after(load_webstimages), setup))
+        .add_plugins(EguiPlugin)
+        .add_systems(
+            Startup,
+            (
+                load_webstimages,
+                add_websters.after(load_webstimages),
+                setup,
+                setup_plot_data,
+            ),
+        )
         .add_systems(
             Update,
             (
@@ -14,7 +25,8 @@ fn main() {
                 contain_websters.after(move_websters),
                 collide_websters,
                 resolve_collided.after(collide_websters),
-                display_levels
+                plot_collisions.after(resolve_collided),
+                display_levels,
             ),
         )
         .run();
@@ -29,7 +41,7 @@ fn load_webstimages(mut commands: Commands, assets: Res<AssetServer>) {
         assets.load("webster_0.png"),
         assets.load("webster_1.png"),
         assets.load("webster_2.png"),
-        assets.load("webster_3.png")
+        assets.load("webster_3.png"),
     ];
     commands.insert_resource(WebsterLevels(levels));
 }
@@ -46,7 +58,11 @@ fn add_websters(mut commands: Commands, assets: Res<AssetServer>) {
                 texture: calm,
                 transform: Transform {
                     scale: Vec3::splat(20.),
-                    translation: Vec3::new(thread_rng().gen_range(-450.0..450.0), thread_rng().gen_range(-450.0..450.0), 0.),
+                    translation: Vec3::new(
+                        thread_rng().gen_range(-450.0..450.0),
+                        thread_rng().gen_range(-450.0..450.0),
+                        0.,
+                    ),
                     ..default()
                 },
                 sprite: Sprite {
@@ -79,19 +95,17 @@ fn contain_websters(mut query: Query<(&mut Direction, &Transform)>) {
 }
 
 // slow af :D
-fn collide_websters(
-    mut commands: Commands,
-    query: Query<(&Transform, Entity), With<Webstenergy>>,
-) {
+fn collide_websters(mut commands: Commands, query: Query<(&Transform, Entity), With<Webstenergy>>) {
     for (transform, entity) in &query {
         for (other_transform, other_entity) in &query {
-            if entity != other_entity && collide(
-                transform.translation,
-                Vec2::new(10., 10.),
-                other_transform.translation,
-                Vec2::new(10., 10.),
-            )
-            .is_some()
+            if entity != other_entity
+                && collide(
+                    transform.translation,
+                    Vec2::new(10., 10.),
+                    other_transform.translation,
+                    Vec2::new(10., 10.),
+                )
+                .is_some()
             {
                 commands.entity(entity).insert(JustCollided);
                 commands.entity(other_entity).insert(JustCollided);
@@ -100,18 +114,51 @@ fn collide_websters(
     }
 }
 
-fn resolve_collided(mut commands: Commands, query: Query<Entity, With<JustCollided>>) {
+fn resolve_collided(
+    mut commands: Commands,
+    query: Query<Entity, With<JustCollided>>,
+    mut colplot: ResMut<CollisionPlot>,
+    time: Res<Time>
+) {
+    let mut point_added = false;
     for entity in &query {
+        if !point_added {
+            let old_cnt = colplot.0.last().unwrap()[1];
+            colplot.0.push([time.elapsed_seconds_f64(), old_cnt + 1.]);
+            point_added = true;
+        } else {
+            colplot.0.iter_mut().last().unwrap()[1] += 1.;
+        }
         commands.entity(entity).despawn();
     }
 }
 
-fn display_levels(mut query: Query<(&mut Handle<Image>, &Webstenergy)>, levels: Res<WebsterLevels>) {
+fn display_levels(
+    mut query: Query<(&mut Handle<Image>, &Webstenergy)>,
+    levels: Res<WebsterLevels>,
+) {
     for (mut texture, webstenergy) in &mut query {
         let level = webstenergy.0 as usize - 1;
         *texture = levels.0.get(level).unwrap().clone();
     }
 }
+
+fn setup_plot_data(mut commands: Commands) {
+    commands.insert_resource(CollisionPlot(vec![[0., 0.]]));
+}
+
+fn plot_collisions(mut contexts: EguiContexts, colplot: Res<CollisionPlot>) {
+    egui::Window::new("Number of collisions").show(contexts.ctx_mut(), |ui| {
+        let plot = Plot::new("nos");
+        // println!("rebuilding graph: {:?}", colplot.0);
+        plot.show(ui, |plot_ui| plot_ui.line(Line::new(colplot.0.clone())))
+    });
+}
+
+
+
+#[derive(Resource)]
+struct CollisionPlot(Vec<[f64; 2]>);
 
 #[derive(Component, Deref, DerefMut)]
 struct Webstenergy(f32);
