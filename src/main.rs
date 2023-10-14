@@ -1,4 +1,4 @@
-use bevy::{ecs::query::Has, prelude::*, sprite::collide_aabb::collide};
+use bevy::{prelude::*, sprite::collide_aabb::collide};
 use rand::{thread_rng, Rng};
 
 const SPEED: f32 = 50.;
@@ -6,7 +6,7 @@ const SPEED: f32 = 50.;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_systems(Startup, (add_websters, setup))
+        .add_systems(Startup, (load_webstimages, add_websters.after(load_webstimages), setup))
         .add_systems(
             Update,
             (
@@ -14,6 +14,7 @@ fn main() {
                 contain_websters.after(move_websters),
                 collide_websters,
                 resolve_collided.after(collide_websters),
+                display_levels
             ),
         )
         .run();
@@ -23,6 +24,19 @@ fn setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
 }
 
+fn load_webstimages(mut commands: Commands, assets: Res<AssetServer>) {
+    let levels = [
+        assets.load("webster_0.png"),
+        assets.load("webster_1.png"),
+        assets.load("webster_2.png"),
+        assets.load("webster_3.png")
+    ];
+    commands.insert_resource(WebsterLevels(levels));
+}
+
+#[derive(Resource)]
+struct WebsterLevels([Handle<Image>; 4]);
+
 fn add_websters(mut commands: Commands, assets: Res<AssetServer>) {
     for _ in 0..100 {
         let calm = assets.load("webster_0.png");
@@ -31,8 +45,12 @@ fn add_websters(mut commands: Commands, assets: Res<AssetServer>) {
             SpriteBundle {
                 texture: calm,
                 transform: Transform {
-                    scale: Vec3::splat(0.1),
+                    scale: Vec3::splat(20.),
                     translation: Vec3::new(thread_rng().gen_range(-450.0..450.0), thread_rng().gen_range(-450.0..450.0), 0.),
+                    ..default()
+                },
+                sprite: Sprite {
+                    custom_size: Some(Vec2::new(1., 1.)),
                     ..default()
                 },
                 ..default()
@@ -60,6 +78,7 @@ fn contain_websters(mut query: Query<(&mut Direction, &Transform)>) {
     }
 }
 
+// slow af :D
 fn collide_websters(
     mut commands: Commands,
     query: Query<(&Transform, Entity), With<Webstenergy>>,
@@ -84,6 +103,13 @@ fn collide_websters(
 fn resolve_collided(mut commands: Commands, query: Query<Entity, With<JustCollided>>) {
     for entity in &query {
         commands.entity(entity).despawn();
+    }
+}
+
+fn display_levels(mut query: Query<(&mut Handle<Image>, &Webstenergy)>, levels: Res<WebsterLevels>) {
+    for (mut texture, webstenergy) in &mut query {
+        let level = webstenergy.0 as usize - 1;
+        *texture = levels.0.get(level).unwrap().clone();
     }
 }
 
