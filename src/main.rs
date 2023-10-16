@@ -1,7 +1,7 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::camera::ScalingMode};
 use bevy_egui::EguiPlugin;
 
-use collision_sim::{AppState, SimPlugin, Webstimages};
+use collision_sim::{AppState, SimPlugin, Webstimages, IntroPlugin};
 
 fn main() {
     App::new()
@@ -9,12 +9,21 @@ fn main() {
         .add_systems(Startup, (setup_camera, load_webstimages))
         .add_plugins(DefaultPlugins)
         .add_plugins(EguiPlugin)
+        .add_plugins(IntroPlugin)
         .add_plugins(SimPlugin)
         .run();
 }
 
 fn setup_camera(mut commands: Commands) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle {
+        projection: OrthographicProjection {
+            far: 1000.,
+            near: -1000.,
+            scaling_mode: ScalingMode::FixedVertical(1000.),
+            ..default()
+        },
+        ..default()
+    });
 }
 
 fn load_webstimages(mut commands: Commands, assets: Res<AssetServer>) {

@@ -9,7 +9,7 @@ pub struct SimPlugin;
 
 impl Plugin for SimPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::Sim), setup_plot_data)
+        app.add_systems(OnEnter(AppState::Sim), (setup_plot_data, add_websters, init_start_time))
             .add_systems(
                 Update,
                 (
@@ -25,7 +25,10 @@ impl Plugin for SimPlugin {
 const SPEED: f32 = 50.;
 
 #[derive(Resource)]
-struct CollisionPlot(Vec<[f64; 2]>);
+struct LivePlot(Vec<[f64; 2]>);
+
+#[derive(Resource)]
+struct StartTime(f64);
 
 #[derive(Component, Deref, DerefMut)]
 struct Webstenergy(f32);
@@ -62,6 +65,10 @@ fn add_websters(mut commands: Commands, assets: Res<AssetServer>) {
             Direction(rand_angle * Vec3::Y),
         ));
     }
+}
+
+fn init_start_time(mut commands: Commands, time: Res<Time>) {
+    commands.insert_resource(StartTime(time.elapsed_seconds_f64()));
 }
 
 fn move_websters(mut query: Query<(&mut Transform, &Webstenergy, &Direction)>, time: Res<Time>) {
@@ -104,14 +111,15 @@ fn collide_websters(mut commands: Commands, query: Query<(&Transform, Entity), W
 fn resolve_collided(
     mut commands: Commands,
     query: Query<Entity, With<JustCollided>>,
-    mut colplot: ResMut<CollisionPlot>,
+    mut colplot: ResMut<LivePlot>,
     time: Res<Time>,
+    start_time: Res<StartTime>
 ) {
     let mut point_added = false;
     for entity in &query {
         if !point_added {
             let old_cnt = colplot.0.last().unwrap()[1];
-            colplot.0.push([time.elapsed_seconds_f64(), old_cnt + 1.]);
+            colplot.0.push([time.elapsed_seconds_f64() - start_time.0, old_cnt + 1.]);
             point_added = true;
         } else {
             colplot.0.iter_mut().last().unwrap()[1] += 1.;
@@ -128,10 +136,10 @@ fn display_levels(mut query: Query<(&mut Handle<Image>, &Webstenergy)>, levels: 
 }
 
 fn setup_plot_data(mut commands: Commands) {
-    commands.insert_resource(CollisionPlot(vec![[0., 0.]]));
+    commands.insert_resource(LivePlot(vec![[0., 0.]]));
 }
 
-fn plot_collisions(mut contexts: EguiContexts, colplot: Res<CollisionPlot>) {
+fn plot_collisions(mut contexts: EguiContexts, colplot: Res<LivePlot>) {
     egui::Window::new("Number of collisions").show(contexts.ctx_mut(), |ui| {
         let plot = Plot::new("nos");
         // println!("rebuilding graph: {:?}", colplot.0);

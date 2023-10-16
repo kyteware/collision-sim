@@ -1,6 +1,7 @@
 mod intro;
 mod sim;
 
+pub use intro::IntroPlugin;
 pub use sim::SimPlugin;
 
 use bevy::prelude::*;
