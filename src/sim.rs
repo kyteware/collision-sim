@@ -9,16 +9,19 @@ pub struct SimPlugin;
 
 impl Plugin for SimPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::Sim), (setup_plot_data, add_websters, init_start_time))
-            .add_systems(
-                Update,
-                (
-                    (move_websters, contain_websters).chain(),
-                    (collide_websters, resolve_collided, plot_collisions).chain(),
-                    display_levels,
-                )
-                    .run_if(in_state(AppState::Sim)),
-            );
+        app.add_systems(
+            OnEnter(AppState::Sim),
+            (setup_plot_data, add_websters, init_start_time),
+        )
+        .add_systems(
+            Update,
+            (
+                (move_websters, contain_websters).chain(),
+                (collide_websters, resolve_collided, plot_collisions).chain(),
+                display_levels,
+            )
+                .run_if(in_state(AppState::Sim)),
+        );
     }
 }
 
@@ -113,13 +116,15 @@ fn resolve_collided(
     query: Query<Entity, With<JustCollided>>,
     mut colplot: ResMut<LivePlot>,
     time: Res<Time>,
-    start_time: Res<StartTime>
+    start_time: Res<StartTime>,
 ) {
     let mut point_added = false;
     for entity in &query {
         if !point_added {
             let old_cnt = colplot.0.last().unwrap()[1];
-            colplot.0.push([time.elapsed_seconds_f64() - start_time.0, old_cnt + 1.]);
+            colplot
+                .0
+                .push([time.elapsed_seconds_f64() - start_time.0, old_cnt + 1.]);
             point_added = true;
         } else {
             colplot.0.iter_mut().last().unwrap()[1] += 1.;

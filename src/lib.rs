@@ -1,6 +1,8 @@
+mod controls;
 mod intro;
 mod sim;
 
+pub use controls::{ControlsPlugin, SimControls};
 pub use intro::IntroPlugin;
 pub use sim::SimPlugin;
 

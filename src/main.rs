@@ -1,7 +1,7 @@
 use bevy::{prelude::*, render::camera::ScalingMode};
 use bevy_egui::EguiPlugin;
 
-use collision_sim::{AppState, SimPlugin, Webstimages, IntroPlugin};
+use collision_sim::{AppState, IntroPlugin, SimPlugin, Webstimages, ControlsPlugin};
 
 fn main() {
     App::new()
@@ -9,6 +9,7 @@ fn main() {
         .add_systems(Startup, (setup_camera, load_webstimages))
         .add_plugins(DefaultPlugins)
         .add_plugins(EguiPlugin)
+        .add_plugins(ControlsPlugin)
         .add_plugins(IntroPlugin)
         .add_plugins(SimPlugin)
         .run();

@@ -15,7 +15,7 @@ impl Plugin for IntroPlugin {
 const BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
 const HOVERED: Color = Color::rgb(0.5, 0.5, 0.5);
 
-fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup_ui(mut commands: Commands) {
     commands
         .spawn(NodeBundle {
             style: Style {
@@ -27,15 +27,16 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..default()
         })
         .with_children(|parent| {
-            parent.spawn(TextBundle::from_section( 
+            parent.spawn(TextBundle::from_section(
                 "The Webster Collision Simulator",
                 TextStyle {
                     font_size: 80.,
                     color: Color::WHITE,
                     ..default()
-                }
+                },
             ));
-            parent.spawn(ButtonBundle {
+            parent
+                .spawn(ButtonBundle {
                     style: Style {
                         width: Val::Px(150.0),
                         height: Val::Px(65.0),
@@ -65,14 +66,10 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 fn handle_button(
     mut interaction_query: Query<
-        (
-            &Interaction,
-            &mut BackgroundColor,
-            &mut BorderColor,
-        ),
+        (&Interaction, &mut BackgroundColor, &mut BorderColor),
         (Changed<Interaction>, With<Button>),
     >,
-    mut next_state: ResMut<NextState<AppState>>
+    mut next_state: ResMut<NextState<AppState>>,
 ) {
     for (interaction, mut color, mut border_color) in &mut interaction_query {
         match *interaction {
@@ -85,7 +82,7 @@ fn handle_button(
                 border_color.0 = Color::BLACK;
             }
             Interaction::Pressed => {
-                next_state.0 = Some(AppState::Sim);
+                next_state.0 = Some(AppState::Controls);
             }
         }
     }
