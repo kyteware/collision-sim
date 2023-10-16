@@ -19,7 +19,7 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn(NodeBundle {
             style: Style {
-                width: Val::Percent(100.0),
+                width: Val::Percent(90.0),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
                 ..default()
@@ -27,8 +27,15 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..default()
         })
         .with_children(|parent| {
-            parent
-                .spawn(ButtonBundle {
+            parent.spawn(TextBundle::from_section( 
+                "The Webster Collision Simulator",
+                TextStyle {
+                    font_size: 80.,
+                    color: Color::WHITE,
+                    ..default()
+                }
+            ));
+            parent.spawn(ButtonBundle {
                     style: Style {
                         width: Val::Px(150.0),
                         height: Val::Px(65.0),
