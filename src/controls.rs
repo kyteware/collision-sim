@@ -68,24 +68,24 @@ fn setup_ui(mut commands: Commands) {
                         },
                     ));
                 });
-                // pressure
-                parent
-                    .spawn(ButtonBundle {
-                        style: button_style.clone(),
-                        border_color: BorderColor(Color::BLACK),
-                        background_color: BUTTON.into(),
-                        ..default()
-                    })
-                    .with_children(|parent| {
-                        parent.spawn(TextBundle::from_section(
-                            "^Pressure^",
-                            TextStyle {
-                                font_size: 40.0,
-                                color: Color::rgb(0.9, 0.9, 0.9),
-                                ..default()
-                            },
-                        ));
-                    });
+            // pressure
+            parent
+                .spawn(ButtonBundle {
+                    style: button_style.clone(),
+                    border_color: BorderColor(Color::BLACK),
+                    background_color: BUTTON.into(),
+                    ..default()
+                })
+                .with_children(|parent| {
+                    parent.spawn(TextBundle::from_section(
+                        "^Pressure^",
+                        TextStyle {
+                            font_size: 40.0,
+                            color: Color::rgb(0.9, 0.9, 0.9),
+                            ..default()
+                        },
+                    ));
+                });
             // run
             parent
                 .spawn(ButtonBundle {
@@ -109,12 +109,17 @@ fn setup_ui(mut commands: Commands) {
 
 fn handle_button(
     mut interaction_query: Query<
-        (&Interaction, &mut BackgroundColor, &mut BorderColor, &Children),
+        (
+            &Interaction,
+            &mut BackgroundColor,
+            &mut BorderColor,
+            &Children,
+        ),
         (Changed<Interaction>, With<Button>),
     >,
     text_query: Query<&Text>,
     mut next_state: ResMut<NextState<AppState>>,
-    mut controls: ResMut<SimControls>
+    mut controls: ResMut<SimControls>,
 ) {
     for (interaction, mut color, mut border_color, children) in &mut interaction_query {
         let text = &text_query.get(children[0]).unwrap().sections[0].value;
@@ -128,16 +133,14 @@ fn handle_button(
             Interaction::Pressed => {
                 if text == "Run" {
                     next_state.0 = Some(AppState::Sim);
-                }
-                else if text == "^Temperature^" {
+                } else if text == "^Temperature^" {
                     controls.temp = !controls.temp;
                     if controls.temp {
                         *color = BUTTON_ON.into();
                     } else {
                         *color = BUTTON.into();
                     }
-                }
-                else if text == "^Pressure^" {
+                } else if text == "^Pressure^" {
                     controls.pressure = !controls.pressure;
                     if controls.pressure {
                         *color = BUTTON_ON.into();

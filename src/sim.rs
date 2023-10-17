@@ -1,9 +1,12 @@
-use bevy::{prelude::*, sprite::collide_aabb::collide};
+use bevy::{
+    prelude::*,
+    sprite::{collide_aabb::collide, MaterialMesh2dBundle},
+};
 use bevy_egui::{egui, EguiContexts};
 use egui_plot::{Line, Plot};
 use rand::{thread_rng, Rng};
 
-use crate::{AppState, Webstimages};
+use crate::{AppState, SimControls, Webstimages};
 
 pub struct SimPlugin;
 
@@ -11,7 +14,7 @@ impl Plugin for SimPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             OnEnter(AppState::Sim),
-            (setup_plot_data, add_websters, init_start_time),
+            (setup_plot_data, add_websters, init_start_time, setup_area),
         )
         .add_systems(
             Update,
@@ -42,18 +45,38 @@ struct Direction(Vec3);
 #[derive(Component)]
 struct JustCollided;
 
-fn add_websters(mut commands: Commands, assets: Res<AssetServer>) {
+fn setup_area(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    controls: Res<SimControls>,
+) {
+    let scale = if !controls.pressure { 1000. } else { 500. };
+    commands.spawn(MaterialMesh2dBundle {
+        mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
+        transform: Transform::default().with_scale(Vec3::splat(scale)),
+        material: materials.add(ColorMaterial::from(Color::DARK_GRAY)),
+        ..default()
+    });
+}
+
+fn add_websters(mut commands: Commands, assets: Res<AssetServer>, controls: Res<SimControls>) {
     for _ in 0..100 {
         let calm = assets.load("webster_0.png");
         let rand_angle = Quat::from_axis_angle(Vec3::Z, thread_rng().gen::<f32>() * 3.1415 * 2.);
+        let start_range = if !controls.pressure {
+            -450.0..450.0
+        } else {
+            -225.0..225.0
+        };
         commands.spawn((
             SpriteBundle {
                 texture: calm,
                 transform: Transform {
                     scale: Vec3::splat(20.),
                     translation: Vec3::new(
-                        thread_rng().gen_range(-450.0..450.0),
-                        thread_rng().gen_range(-450.0..450.0),
+                        thread_rng().gen_range(start_range.clone()),
+                        thread_rng().gen_range(start_range.clone()),
                         0.,
                     ),
                     ..default()
@@ -64,7 +87,11 @@ fn add_websters(mut commands: Commands, assets: Res<AssetServer>) {
                 },
                 ..default()
             },
-            Webstenergy(thread_rng().gen::<f32>() * 4. + 1.),
+            Webstenergy(if !controls.temp {
+                thread_rng().gen::<f32>() * 4. + 1.
+            } else {
+                thread_rng().gen::<f32>() * 2. + 3.
+            }),
             Direction(rand_angle * Vec3::Y),
         ));
     }
@@ -80,12 +107,17 @@ fn move_websters(mut query: Query<(&mut Transform, &Webstenergy, &Direction)>, t
     }
 }
 
-fn contain_websters(mut query: Query<(&mut Direction, &Transform)>) {
+fn contain_websters(mut query: Query<(&mut Direction, &Transform)>, controls: Res<SimControls>) {
+    let range = if !controls.pressure {
+        -500.0..500.0
+    } else {
+        -250.0..250.0
+    };
     for (mut direction, transform) in query.iter_mut() {
-        if !(-500.0..500.0).contains(&transform.translation.x) {
+        if !(range.clone()).contains(&transform.translation.x) {
             direction.x *= -1.;
         }
-        if !(-500.0..500.0).contains(&transform.translation.y) {
+        if !(range.clone()).contains(&transform.translation.y) {
             direction.y *= -1.;
         }
     }

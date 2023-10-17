@@ -28,9 +28,9 @@ fn setup_ui(mut commands: Commands) {
         })
         .with_children(|parent| {
             parent.spawn(TextBundle::from_section(
-                "The Webster Collision Simulator",
+                "The Collision Simulator",
                 TextStyle {
-                    font_size: 80.,
+                    font_size: 50.,
                     color: Color::WHITE,
                     ..default()
                 },
@@ -45,6 +45,7 @@ fn setup_ui(mut commands: Commands) {
                         justify_content: JustifyContent::Center,
                         // vertically center child text
                         align_items: AlignItems::Center,
+                        margin: UiRect::all(Val::Px(20.)),
                         ..default()
                     },
                     border_color: BorderColor(Color::BLACK),
