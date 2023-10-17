@@ -90,6 +90,6 @@ fn handle_button(
 
 fn destroy_ui(mut commands: Commands, query: Query<Entity, With<Node>>) {
     for entity in &query {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
