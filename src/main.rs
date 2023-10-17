@@ -1,7 +1,7 @@
 use bevy::{prelude::*, render::camera::ScalingMode};
 use bevy_egui::EguiPlugin;
 
-use collision_sim::{AppState, IntroPlugin, SimPlugin, Webstimages, ControlsPlugin};
+use collision_sim::{AppState, ControlsPlugin, IntroPlugin, SimPlugin, Webstimages};
 
 fn main() {
     App::new()
