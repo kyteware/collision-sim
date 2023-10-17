@@ -14,7 +14,6 @@ impl Plugin for ControlsPlugin {
 
 const BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
 const BUTTON_ON: Color = Color::rgb(0.15, 0.5, 0.15);
-const HOVERED: Color = Color::rgb(0.5, 0.5, 0.5);
 
 #[derive(Resource)]
 pub struct SimControls {
@@ -113,7 +112,7 @@ fn handle_button(
         (&Interaction, &mut BackgroundColor, &mut BorderColor, &Children),
         (Changed<Interaction>, With<Button>),
     >,
-    mut text_query: Query<&mut Text>,
+    text_query: Query<&Text>,
     mut next_state: ResMut<NextState<AppState>>,
     mut controls: ResMut<SimControls>
 ) {
